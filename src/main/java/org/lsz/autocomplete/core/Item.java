@@ -8,6 +8,12 @@ public class Item {
     int score;
     String term;
 
+    public Item(String uid, int score, String term) {
+        this.uid = uid;
+        this.score = score;
+        this.term = term;
+    }
+
     public String getUid() {
         return uid;
     }

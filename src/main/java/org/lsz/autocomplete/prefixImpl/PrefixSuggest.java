@@ -7,6 +7,7 @@ import redis.clients.jedis.Pipeline;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 
 /**
  * Created by lsz on 2014/11/15.
@@ -22,25 +23,29 @@ public class PrefixSuggest implements Suggest {
     }
     @Override
     public void add(Item item) {
-        Pipeline pipeline = jedis.pipelined();
+
         String word = item.getTerm();
         for(int i = 1 ; i< word.length()+1;i++){
-            pipeline.zadd(KEY,0.,word.substring(0,i));
+            jedis.zadd(KEY, 0., word.substring(0, i));
         }
-        pipeline.zadd(KEY,0,word+"*");
-        pipeline.exec();
+        jedis.zadd(KEY, 0, word + "*");
+
     }
 
     @Override
     public List<String> suggest(String prefix, int num) {
         ArrayList<String> list = new ArrayList<String>();
-        long start = jedis.zrank(KEY,prefix);
-        int  rangelen = 50;
-        if(start == 0){
+        long start = 0;
+        try {
+            start = jedis.zrank(KEY, prefix);
+        }catch (NullPointerException e){
             return null;
         }
+        int  rangelen = 50;
+
         while (true){
-            for(String word: jedis.zrange(KEY,start,start+rangelen)){
+            Set<String> x = jedis.zrange(KEY, start, start + rangelen);
+            for(String word:x ){
                 if(!word.startsWith(prefix)){
                     return list;
                 }
@@ -49,6 +54,7 @@ public class PrefixSuggest implements Suggest {
                 }
                 if(list.size()>=num)return list;
             }
+            if(x.size() == 0)return list;
             start = start+rangelen;
 
         }
